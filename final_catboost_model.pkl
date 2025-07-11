@@ -1,0 +1,93 @@
+# training_catboost_model.py
+
+# התקנת CatBoost (אם לא מותקן)
+# !pip install catboost
+
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.metrics import make_scorer, precision_score, recall_score, f1_score, accuracy_score, roc_auc_score
+from catboost import CatBoostClassifier
+import joblib
+
+# קריאת הקובץ
+file_path = 'm_sofi.csv'  # ודא שהקובץ הזה קיים בתיקיית הפרויקט שלך
+df = pd.read_csv(file_path)
+
+# סינון רק לאיתורים מודיעיניים
+df = df[df['Type_1'] == 'Intelligence'].copy()
+
+# יצירת עמודת מטרה
+df['target'] = df['intelligence_to_administrative']
+
+# הסרת עמודות מיותרות
+columns_to_drop = [
+    'Case', 'Year_1', 'Year_2', 'Update_Photo_Date_1', 'Update_Photo_Date_2', 'intelligence_to_administrative',
+    'administrative_to_administrative', 'intelligence_to_intelligence',
+    'Type_1', 'Type_2', 'Potential_Type_1', 'Potential_Type_2',
+    'Planning_Area', 'Local_Authority', 'City', 'Block', 'Parcel',
+    'X_1', 'X_2', 'Y_1', 'Y_2', 'Local_land_designation',
+    'Prevantion', 'Defence', 'Vatmal', 'Tzvir', 'Return'
+]
+df.drop(columns=columns_to_drop, inplace=True)
+
+# הוספת עמודות של העבירה השנייה כ־NaN אם חסרות
+second_detection_cols = [
+    "Kal_Kashiah_2",
+    "Quarter_Update_2_Q1", "Quarter_Update_2_Q2", "Quarter_Update_2_Q3", "Quarter_Update_2_Q4"
+] + [col for col in df.columns if col.startswith("Potential_Type_2_Grouped_")]
+
+for col in second_detection_cols:
+    if col not in df.columns:
+        df[col] = np.nan
+
+# הגדרת X ו־y
+X = df.drop(columns=['target'])
+y = df['target']
+
+# פרמטרים שנבחרו מראש
+best_params = {
+    'learning_rate': 0.05,
+    'l2_leaf_reg': 3,
+    'iterations': 300,
+    'depth': 8
+}
+
+# קרוס ולידיישן
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+# יצירת מודל
+model_full = CatBoostClassifier(**best_params, verbose=0)
+
+# אימון המודל
+model_full.fit(X, y)
+
+# שמירת המודל לקובץ
+joblib.dump(model_full, "final_catboost_model.pkl")
+
+# פונקציות להערכת הביצועים
+def cross_val_auc(model, X, y):
+    aucs = []
+    for train_idx, test_idx in cv.split(X, y):
+        model.fit(X.iloc[train_idx], y.iloc[train_idx])
+        probs = model.predict_proba(X.iloc[test_idx])[:, 1]
+        aucs.append(roc_auc_score(y.iloc[test_idx], probs))
+    return np.mean(aucs)
+
+def evaluate_model(model, X, y, name):
+    return {
+        'Model': name,
+        'Precision (class 1)': cross_val_score(model, X, y, cv=cv, scoring=make_scorer(precision_score)).mean(),
+        'Recall (class 1)': cross_val_score(model, X, y, cv=cv, scoring=make_scorer(recall_score)).mean(),
+        'F1-score (class 1)': cross_val_score(model, X, y, cv=cv, scoring=make_scorer(f1_score)).mean(),
+        'Accuracy': cross_val_score(model, X, y, cv=cv, scoring=make_scorer(accuracy_score)).mean(),
+        'AUC': cross_val_auc(model, X, y)
+    }
+
+# הרצת הערכה
+results = [
+    evaluate_model(model_full, X, y, 'Full CatBoost (best params)'),
+]
+
+# הצגת טבלת תוצאות
+print(pd.DataFrame(results))
