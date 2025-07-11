@@ -11,9 +11,9 @@ st.title("סיווג האם האיתור יהפוך למנהלית")
 st.markdown("יש למלא את כל השדות הבאים:")
 
 with st.form("prediction_form"):
-    district = st.selectbox("📍 מחוז", ["Center", "Jerusalem", "North", "South"], index=None, placeholder="בחרי מחוז")
+    district = st.selectbox("📍 מחוז", ["Center", "Jerusalem", "North", "South"], index=None, placeholder="בחר מחוז")
 
-    q1 = st.selectbox("📆 רבעון איתור ראשון", ["Q1", "Q2", "Q3", "Q4"], index=None, placeholder="בחרי רבעון")
+    q1 = st.selectbox("📆 רבעון איתור ראשון", ["Q1", "Q2", "Q3", "Q4"], index=None, placeholder="בחר רבעון")
 
     types = [
         "Earthworks and clearance", "Site preparation", "Roads and approaches",
@@ -22,24 +22,24 @@ with st.form("prediction_form"):
         "new floor", "concrete floor", "main structure", "light structures",
         "mobile structures", "add-ons and reinforcements", "termination/disposal"
     ]
-    type1 = st.selectbox("🧱 אופי איתור ראשון", types, index=None, placeholder="בחרי אופי")
+    type1 = st.selectbox("🧱 אופי איתור ראשון", types, index=None, placeholder="בחר אופי")
 
     land_options = [
         "Agricultural area", "Beach/ River", "Industrial & Employment",
         "Nature & Conservation", "Tourism & Commerce", "Unknown & Other",
         "Urban & Residential", "Village"
     ]
-    land_use = st.selectbox("🗺 ייעוד קרקע", land_options, index=None, placeholder="בחרי ייעוד")
+    land_use = st.selectbox("🗺 ייעוד קרקע", land_options, index=None, placeholder="בחר ייעוד")
 
-    structure1 = st.selectbox("🏗 סוג מבנה איתור ראשון", ["בחר", "קל", "קשיח"])
-    city_area = st.selectbox("🏙 אזור עירוני", ["בחר", "כן", "לא"])
-    jewish = st.selectbox("🕍 אזור יהודי", ["בחר", "כן", "לא"])
+    structure1 = st.selectbox("🏗 סוג מבנה איתור ראשון", ["קל", "קשיח"], index=None, placeholder="בחר סוג")
+    city_area = st.selectbox("🏙 אזור עירוני", ["כן", "לא"], index=None, placeholder="בחר אזור")
+    jewish = st.selectbox("🕍 אזור יהודי", ["כן", "לא"], index=None, placeholder="בחר אזור")
 
     submitted = st.form_submit_button("חשב תוצאה")
     reset = st.form_submit_button("איפוס הטופס")
 
 if submitted:
-    if "בחר" in [district, q1, type1, land_use, structure1, city_area, jewish]:
+    if None in [district, q1, type1, land_use, structure1, city_area, jewish]:
         st.warning("אנא מלא את כל השדות לפני ביצוע חיזוי.")
     else:
         features = {
@@ -64,8 +64,11 @@ if submitted:
         features['city_erea'] = int(city_area == "כן")
         features['jewish_e'] = int(jewish == "כן")
 
-        # העמודות שלא קיימות בטופס
-        for col in ["Kal_Kashiah_2"] + [f"Potential_Type_2_Grouped_{t}" for t in types]:
+        # עמודות נוספות שיקבלו ערך NaN
+        for col in [
+            "Kal_Kashiah_2",
+            "Quarter_Update_2_Q1", "Quarter_Update_2_Q2", "Quarter_Update_2_Q3", "Quarter_Update_2_Q4"
+        ] + [f"Potential_Type_2_Grouped_{t}" for t in types]:
             features[col] = np.nan
 
         input_df = pd.DataFrame([features])
@@ -76,4 +79,6 @@ if submitted:
             st.info("ℹ️ האיתור יישאר מודיעיני")
 
 elif reset:
-    st.rerun()
+    st.experimental_set_query_params(reset=str(np.random.randint(0, 100000)))
+    st.experimental_rerun()
+
