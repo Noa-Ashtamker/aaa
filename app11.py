@@ -81,16 +81,3 @@ if submitted:
 elif reset:
     st.experimental_set_query_params(reset=str(np.random.randint(0, 100000)))
     st.experimental_rerun()
-
-# קריאת רשימת הפיצ'רים המקוריים
-with open("model_features.txt", "r") as f:
-    expected_cols = [line.strip() for line in f]
-
-# השלמה של עמודות חסרות
-for col in expected_cols:
-    if col not in input_df.columns:
-        input_df[col] = np.nan
-
-# מיון לפי סדר הפיצ'רים של המודל
-input_df = input_df[expected_cols]
-
