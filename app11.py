@@ -4,6 +4,7 @@ import numpy as np
 import joblib
 
 # טוען את המודל
+from catboost import CatBoostClassifier
 model = CatBoostClassifier()
 model.load_model("final_catboost_model.cbm")
 
