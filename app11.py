@@ -1,16 +1,16 @@
+# === app11.py - Streamlit App ===
 import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
 
-# טוען את המודל
-from catboost import CatBoostClassifier
-model = CatBoostClassifier()
-model.load_model("final_catboost_model.cbm")
-
+# Load model and column order
+saved = joblib.load("final_catboost_model_with_cols.pkl")
+model = saved['model']
+model_columns = saved['columns']
 
 st.set_page_config(page_title="חיזוי עבירה שנייה", page_icon="🏗", layout="centered")
-st.title("סיווג האם האיתור יהפוך למנהלי")
+st.title("סיווג האם האיתור יהפוך למנהלית")
 st.markdown("יש למלא את כל השדות הבאים:")
 
 with st.form("prediction_form"):
@@ -31,7 +31,7 @@ with st.form("prediction_form"):
         "Nature & Conservation", "Tourism & Commerce", "Unknown & Other",
         "Urban & Residential", "Village"
     ]
-    land_use = st.selectbox("🗺 ייעוד קרקע", land_options, index=None, placeholder="בחר ייעוד")
+    land_use = st.selectbox("🗺 ייעוד קרקע", land_options, index=None, placeholder="בחרי ייעוד")
 
     structure1 = st.selectbox("🏗 סוג מבנה איתור ראשון", ["קל", "קשיח"], index=None, placeholder="בחר סוג")
     city_area = st.selectbox("🏙 אזור עירוני", ["כן", "לא"], index=None, placeholder="בחר אזור")
@@ -66,36 +66,14 @@ if submitted:
         features['city_erea'] = int(city_area == "כן")
         features['jewish_e'] = int(jewish == "כן")
 
-        # עמודות חובה שהמודל דורש מהעבירה השנייה, כולן NaN:
-        missing_cols = [
-            "Kal_Kashiah_2",
-            "Quarter_Update_2_Q1", "Quarter_Update_2_Q2", "Quarter_Update_2_Q3", "Quarter_Update_2_Q4",
-            "Potential_Type_2_Grouped_Earthworks and clearance",
-            "Potential_Type_2_Grouped_Site preparation",
-            "Potential_Type_2_Grouped_Roads and approaches",
-            "Potential_Type_2_Grouped_Drilling and foundations",
-            "Potential_Type_2_Grouped_Base for columns",
-            "Potential_Type_2_Grouped_Infrastructure",
-            "Potential_Type_2_Grouped_Skeleton – beginning",
-            "Potential_Type_2_Grouped_Skeleton – advanced",
-            "Potential_Type_2_Grouped_Skeleton – general",
-            "Potential_Type_2_Grouped_new floor",
-            "Potential_Type_2_Grouped_concrete floor",
-            "Potential_Type_2_Grouped_main structure",
-            "Potential_Type_2_Grouped_light structures",
-            "Potential_Type_2_Grouped_mobile structures",
-            "Potential_Type_2_Grouped_add-ons and reinforcements",
-            "Potential_Type_2_Grouped_termination/disposal"
-        ]
+        # Fill second-detection fields with NaN
+        for col in model_columns:
+            if col not in features:
+                features[col] = np.nan
 
-        for col in missing_cols:
-            features[col] = np.nan
-
-        input_df = pd.DataFrame([features])
-        st.write("עמודות הקלט:", input_df.columns.tolist())
-
-        # חיזוי
+        input_df = pd.DataFrame([features])[model_columns]
         prediction = model.predict(input_df)[0]
+
         if prediction == 1:
             st.success("✔️ האיתור צפוי להפוך לעבירה מנהלית")
         else:
