@@ -10,7 +10,7 @@ model.load_model("final_catboost_model.cbm")
 
 
 st.set_page_config(page_title="חיזוי עבירה שנייה", page_icon="🏗", layout="centered")
-st.title("סיווג האם האיתור יהפוך למנהלית")
+st.title("סיווג האם האיתור יהפוך למנהלי")
 st.markdown("יש למלא את כל השדות הבאים:")
 
 with st.form("prediction_form"):
