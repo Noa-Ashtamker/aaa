@@ -12,7 +12,6 @@ st.markdown("יש למלא את כל השדות הבאים:")
 
 with st.form("prediction_form"):
     district = st.selectbox("📍 מחוז", ["Center", "Jerusalem", "North", "South"], index=None, placeholder="בחר מחוז")
-
     q1 = st.selectbox("📆 רבעון איתור ראשון", ["Q1", "Q2", "Q3", "Q4"], index=None, placeholder="בחר רבעון")
 
     types = [
@@ -64,14 +63,34 @@ if submitted:
         features['city_erea'] = int(city_area == "כן")
         features['jewish_e'] = int(jewish == "כן")
 
-        # עמודות נוספות שיקבלו ערך NaN
-        for col in [
+        # עמודות חובה שהמודל דורש מהעבירה השנייה, כולן NaN:
+        missing_cols = [
             "Kal_Kashiah_2",
-            "Quarter_Update_2_Q1", "Quarter_Update_2_Q2", "Quarter_Update_2_Q3", "Quarter_Update_2_Q4"
-        ] + [f"Potential_Type_2_Grouped_{t}" for t in types]:
+            "Quarter_Update_2_Q1", "Quarter_Update_2_Q2", "Quarter_Update_2_Q3", "Quarter_Update_2_Q4",
+            "Potential_Type_2_Grouped_Earthworks and clearance",
+            "Potential_Type_2_Grouped_Site preparation",
+            "Potential_Type_2_Grouped_Roads and approaches",
+            "Potential_Type_2_Grouped_Drilling and foundations",
+            "Potential_Type_2_Grouped_Base for columns",
+            "Potential_Type_2_Grouped_Infrastructure",
+            "Potential_Type_2_Grouped_Skeleton – beginning",
+            "Potential_Type_2_Grouped_Skeleton – advanced",
+            "Potential_Type_2_Grouped_Skeleton – general",
+            "Potential_Type_2_Grouped_new floor",
+            "Potential_Type_2_Grouped_concrete floor",
+            "Potential_Type_2_Grouped_main structure",
+            "Potential_Type_2_Grouped_light structures",
+            "Potential_Type_2_Grouped_mobile structures",
+            "Potential_Type_2_Grouped_add-ons and reinforcements",
+            "Potential_Type_2_Grouped_termination/disposal"
+        ]
+
+        for col in missing_cols:
             features[col] = np.nan
 
         input_df = pd.DataFrame([features])
+
+        # חיזוי
         prediction = model.predict(input_df)[0]
         if prediction == 1:
             st.success("✔️ האיתור צפוי להפוך לעבירה מנהלית")
