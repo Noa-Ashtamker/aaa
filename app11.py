@@ -92,7 +92,7 @@ if submitted:
             features[col] = np.nan
 
         input_df = pd.DataFrame([features])
-st.write("עמודות הקלט:", input_df.columns.tolist())
+        st.write("עמודות הקלט:", input_df.columns.tolist())
 
         # חיזוי
         prediction = model.predict(input_df)[0]
