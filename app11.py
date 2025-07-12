@@ -4,7 +4,9 @@ import numpy as np
 import joblib
 
 # טוען את המודל
-model = joblib.load("final_catboost_model.pkl")
+model = CatBoostClassifier()
+model.load_model("final_catboost_model.cbm")
+
 
 st.set_page_config(page_title="חיזוי עבירה שנייה", page_icon="🏗", layout="centered")
 st.title("סיווג האם האיתור יהפוך למנהלית")
